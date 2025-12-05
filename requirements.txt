@@ -5,3 +5,4 @@ psycopg2-binary
 pydantic[dotenv]
 sentence-transformers
 pgvector
+datasets
