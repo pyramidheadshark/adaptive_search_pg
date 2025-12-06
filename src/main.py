@@ -1,12 +1,9 @@
 from fastapi import FastAPI
-from src.core.config import settings
+from src.api.routes import router
 
 app = FastAPI(title="Adaptive Search")
-
-@app.get("/")
-def root():
-    return {"msg": "Welcome to Adaptive Search API"}
+app.include_router(router, prefix="/api/v1")
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "db": settings.DATABASE_URL}
+    return {"status": "ok"}
