@@ -1,6 +1,7 @@
 import logging
 from datasets import load_dataset
 from sqlmodel import Session
+from tqdm import tqdm
 from src.db.session import engine
 from src.db.models import Document
 from src.services.ml_service import get_embedding
@@ -11,18 +12,29 @@ def load_data():
     logging.info("Downloading dataset...")
     dataset = load_dataset("BeIR/nfcorpus", "corpus", split="corpus")
     
+    batch_size = 50
+    buffer = []
+    
     with Session(engine) as session:
-        # Taking first 1000 for testing
-        for item in dataset.select(range(1000)):
+        for i, item in tqdm(enumerate(dataset)):
+            # Load full dataset now
             text = item['text']
             title = item['title']
             full_text = f"{title} {text}"
             
             emb = get_embedding(full_text)
             doc = Document(content=full_text, embedding=emb)
-            session.add(doc)
+            buffer.append(doc)
+            
+            if len(buffer) >= batch_size:
+                session.add_all(buffer)
+                session.commit()
+                buffer = []
         
-        session.commit()
+        if buffer:
+            session.add_all(buffer)
+            session.commit()
+            
     logging.info("Data loaded")
 
 if __name__ == "__main__":
