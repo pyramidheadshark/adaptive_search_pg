@@ -4,7 +4,18 @@ from src.db.models import Document, Interaction
 from src.services.ml_service import get_embedding
 import math
 
-def search_documents(session: Session, query: str, limit: int = 10):
+def calculate_boost(strategy, sim, fb):
+    safe_fb = max(0, fb)
+    if strategy == "linear":
+        return sim + (0.01 * safe_fb)
+    elif strategy == "sigmoid":
+        k = 20
+        boost = safe_fb / (safe_fb + k)
+        return sim * (1 + 0.5 * boost)
+    else: # log
+        return sim * (1 + 0.5 * math.log(1 + safe_fb))
+
+def search_documents(session: Session, query: str, limit: int = 10, strategy: str = "log"):
     vector = get_embedding(query)
     
     stmt = select(Document, Document.embedding.cosine_distance(vector).label("dist")).order_by(text("dist ASC")).limit(limit * 2)
@@ -21,12 +32,8 @@ def search_documents(session: Session, query: str, limit: int = 10):
     for doc, dist in candidates:
         sim = 1 - dist
         fb = feedback_map.get(doc.id, 0)
-        
-        # Log-Decay formula
-        safe_fb = max(0, fb)
-        score = sim * (1 + 0.5 * math.log(1 + safe_fb))
-        
-        ranked.append({"id": doc.id, "content": doc.content, "score": score})
+        score = calculate_boost(strategy, sim, fb)
+        ranked.append({"id": doc.id, "content": doc.content, "score": score, "feedback": fb})
         
     ranked.sort(key=lambda x: x["score"], reverse=True)
     return ranked[:limit]
