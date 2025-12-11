@@ -10,6 +10,7 @@ router = APIRouter()
 class SearchRequest(BaseModel):
     query: str
     limit: int = 10
+    strategy: str = "log"
 
 class FeedbackRequest(BaseModel):
     document_id: int
@@ -18,7 +19,7 @@ class FeedbackRequest(BaseModel):
 
 @router.post("/search")
 def search(req: SearchRequest, session: Session = Depends(get_session)):
-    docs = search_documents(session, req.query, req.limit)
+    docs = search_documents(session, req.query, req.limit, req.strategy)
     return {"results": docs}
 
 @router.post("/feedback")
