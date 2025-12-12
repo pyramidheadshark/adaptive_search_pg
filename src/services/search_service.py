@@ -7,13 +7,13 @@ import math
 def calculate_boost(strategy, sim, fb):
     safe_fb = max(0, fb)
     if strategy == "linear":
-        return sim + (0.01 * safe_fb)
+        return sim + (0.002 * safe_fb) # Reduced from 0.01
     elif strategy == "sigmoid":
         k = 20
         boost = safe_fb / (safe_fb + k)
         return sim * (1 + 0.5 * boost)
-    else: # log
-        return sim * (1 + 0.5 * math.log(1 + safe_fb))
+    else: 
+        return sim * (1 + 0.1 * math.log(1 + safe_fb)) # Reduced from 0.5
 
 def search_documents(session: Session, query: str, limit: int = 10, strategy: str = "log"):
     vector = get_embedding(query)
