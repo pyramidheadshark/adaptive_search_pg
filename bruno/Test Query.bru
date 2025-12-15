@@ -1,0 +1,11 @@
+meta {
+  name: Test Query
+  type: http
+}
+post {
+  url: http://localhost:8000/api/v1/search
+  body: json
+}
+body:json {
+  {"query": "vitamin", "limit": 3}
+}

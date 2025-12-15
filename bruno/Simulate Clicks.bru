@@ -1,0 +1,11 @@
+meta {
+  name: Simulate Clicks
+  type: http
+}
+post {
+  url: http://localhost:8000/api/v1/feedback
+  body: json
+}
+body:json {
+  {"document_id": 25, "score_delta": 10}
+}
