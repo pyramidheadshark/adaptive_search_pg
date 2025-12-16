@@ -1,8 +1,8 @@
 # Adaptive Search Engine
 
-Coursework project on DB & ML integration.
+Final submission for the coursework.
 
-## Structure
-- src/core
-- src/api
-- src/db
+## Features
+- Hybrid Search (Vector + Feedback)
+- 3 Ranking Strategies
+- Dockerized

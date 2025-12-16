@@ -5,3 +5,5 @@ __pycache__/
 data/
 .idea/
 .vscode/
+.pytest_cache/
+adaptive_search_history/
