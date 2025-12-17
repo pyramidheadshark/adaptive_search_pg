@@ -1,18 +1,39 @@
-version: '3.8'
 services:
   db:
     image: pgvector/pgvector:pg16
+    container_name: adaptive_search_db
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: search_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: app_password
+      POSTGRES_DB: adaptive_search
     ports:
       - "5432:5432"
-  
-  web:
-    build: .
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
     volumes:
-      - .:/app
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d adaptive_search"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: adaptive_search_app
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://app_user:app_password@db:5432/adaptive_search
+      EMBEDDING_MODEL: sentence-transformers/all-MiniLM-L6-v2
+      HF_TOKEN: ${HF_TOKEN}
+      HF_HOME: /app/data/.cache 
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - hf_cache:/app/data/.cache
+
+volumes:
+  postgres_data:
+  hf_cache:
