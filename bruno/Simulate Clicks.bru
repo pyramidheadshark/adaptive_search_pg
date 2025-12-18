@@ -1,11 +1,23 @@
 meta {
   name: Simulate Clicks
   type: http
+  seq: 3
 }
+
 post {
   url: http://localhost:8000/api/v1/feedback
   body: json
+  auth: none
 }
+
+headers {
+  Content-Type: application/json
+}
+
 body:json {
-  {"document_id": 25, "score_delta": 10}
+  {
+    "document_id": 25,
+    "query": "vitamin A benefits",
+    "score_delta": 10
+  }
 }

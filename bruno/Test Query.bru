@@ -1,11 +1,22 @@
 meta {
   name: Test Query
   type: http
+  seq: 2
 }
+
 post {
   url: http://localhost:8000/api/v1/search
   body: json
+  auth: none
 }
+
+headers {
+  Content-Type: application/json
+}
+
 body:json {
-  {"query": "vitamin", "limit": 3}
+  {
+    "query": "vitamin A benefits",
+    "limit": 3
+  }
 }
