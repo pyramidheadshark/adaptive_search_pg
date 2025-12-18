@@ -1,6 +1,7 @@
 [project]
-name = "adaptive-search"
-version = "0.1.0"
+name = "adaptive-search-pg"
+version = "1.0.0"
+description = "Adaptive Semantic Search with PostgreSQL and Feedback Loop"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi",
@@ -9,5 +10,22 @@ dependencies = [
     "psycopg[binary]",
     "pgvector",
     "sentence-transformers",
-    "datasets"
+    "python-multipart",
+    "torch",
+    "datasets",
+    "pandas",
+    "tqdm",
+    "plotly",
+    "huggingface_hub"
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
