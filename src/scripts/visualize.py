@@ -41,29 +41,26 @@ def create_advanced_dashboard():
         horizontal_spacing=0.05
     )
 
-    for strat_key, strat_name in strat_names.items():
-        fig.add_trace(go.Bar(
-            x=[None], y=[None],
-            name=strat_name,
-            marker_color=colors[strat_key],
-        ), row=1, col=1)
-
     df_eff = df[(df['experiment'] == "Efficiency") & (df['clicks'] == 5)]
     df_eff_start = df[(df['experiment'] == "Efficiency") & (df['clicks'] == 0)]
     
-    mrr_by_strat = df_eff.groupby('strategy')['mrr'].mean().reset_index()
-    fig.add_trace(go.Bar(
-        x=mrr_by_strat['strategy'], 
-        y=mrr_by_strat['mrr'], 
-        marker_color=[colors[s] for s in mrr_by_strat['strategy']], 
-        showlegend=False
-    ), row=1, col=1)
+    mrr_by_strat = df_eff.groupby('strategy')['mrr'].mean()
+    for strat in strat_names.keys():
+        if strat in mrr_by_strat:
+            fig.add_trace(go.Bar(
+                x=[strat_names[strat]], 
+                y=[mrr_by_strat[strat]], 
+                name=strat_names[strat],
+                marker_color=colors[strat],
+                legendgroup=strat
+            ), row=1, col=1)
 
     for strat in df_eff['strategy'].unique():
         fig.add_trace(go.Box(
             y=df_eff[df_eff['strategy'] == strat]['target_rank'], 
-            name=strat, 
+            name=strat_names[strat], 
             marker_color=colors[strat], 
+            legendgroup=strat,
             showlegend=False
         ), row=1, col=2)
 
@@ -72,9 +69,10 @@ def create_advanced_dashboard():
     for strat in merged['strategy'].unique():
         fig.add_trace(go.Histogram(
             x=merged[merged['strategy']==strat]['gain'], 
-            name=strat, 
+            name=strat_names[strat], 
             marker_color=colors[strat], 
             opacity=0.7, 
+            legendgroup=strat,
             showlegend=False
         ), row=1, col=3)
 
@@ -82,18 +80,22 @@ def create_advanced_dashboard():
     for s in colors.keys():
         if s not in top1_rate: top1_rate[s] = 0.0
     fig.add_trace(go.Bar(
-        x=top1_rate.index, 
-        y=top1_rate.values, 
-        marker_color=[colors[s] for s in top1_rate.index], 
+        x=[strat_names[s] for s in colors.keys()],
+        y=[top1_rate.get(s, 0) for s in colors.keys()],
+        marker_color=[colors[s] for s in colors.keys()],
         showlegend=False
     ), row=1, col=4)
 
     df_noise = df[(df['experiment'] == "Noise") & (df['clicks'] == 5)]
     
-    clean_mrr = df_eff.groupby('strategy')['mrr'].mean()
+    noise_qids = df_noise['query_id'].unique()
+    df_eff_filtered = df_eff[df_eff['query_id'].isin(noise_qids)]
+    
+    clean_mrr = df_eff_filtered.groupby('strategy')['mrr'].mean()
     noisy_mrr = df_noise.groupby('strategy')['mrr'].mean()
+    
     fig.add_trace(go.Bar(
-        x=noisy_mrr.index, 
+        x=[strat_names[s] for s in noisy_mrr.index], 
         y=noisy_mrr.values, 
         marker_color=[colors[s] for s in noisy_mrr.index], 
         opacity=0.6, 
@@ -103,26 +105,33 @@ def create_advanced_dashboard():
     for strat in df_noise['strategy'].unique():
         fig.add_trace(go.Box(
             y=df_noise[df_noise['strategy'] == strat]['distractor_rank'], 
-            name=strat, 
+            name=strat_names[strat], 
             marker_color=colors[strat], 
+            legendgroup=strat,
             showlegend=False
         ), row=2, col=2)
 
     survival = df_noise[df_noise['target_rank'] <= 3].groupby('strategy').size() / df_noise.groupby('strategy').size()
     fig.add_trace(go.Bar(
-        x=survival.index, 
+        x=[strat_names[s] for s in survival.index], 
         y=survival.values, 
         marker_color=[colors[s] for s in survival.index], 
         showlegend=False
     ), row=2, col=3)
 
-    resilience = noisy_mrr / clean_mrr
+    resilience = {}
+    for s in colors.keys():
+        c = clean_mrr.get(s, 0.001)
+        n = noisy_mrr.get(s, 0)
+        resilience[s] = n / c if c > 0 else 0
+
     fig.add_trace(go.Bar(
-        x=resilience.index, 
-        y=resilience.values, 
-        marker_color=[colors[s] for s in resilience.index], 
+        x=[strat_names[s] for s in colors.keys()], 
+        y=[resilience[s] for s in colors.keys()], 
+        marker_color=[colors[s] for s in colors.keys()], 
         showlegend=False
     ), row=2, col=4)
+
 
     df_sat = df[df['experiment'] == "Saturation"]
     
@@ -133,14 +142,15 @@ def create_advanced_dashboard():
             x=subset['clicks'], 
             y=subset['target_rank'], 
             mode='lines+markers', 
-            name=strat, 
+            name=strat_names[strat], 
             line=dict(color=colors[strat]),
+            legendgroup=strat,
             showlegend=False
         ), row=3, col=1)
 
     at_click_3 = df_sat[df_sat['clicks'] == 3].groupby('strategy')['target_rank'].mean()
     fig.add_trace(go.Bar(
-        x=at_click_3.index, 
+        x=[strat_names[s] for s in at_click_3.index], 
         y=at_click_3.values, 
         marker_color=[colors[s] for s in at_click_3.index], 
         showlegend=False
@@ -150,14 +160,15 @@ def create_advanced_dashboard():
     for strat in at_click_20['strategy'].unique():
         fig.add_trace(go.Box(
             y=at_click_20[at_click_20['strategy'] == strat]['target_rank'], 
-            name=strat, 
+            name=strat_names[strat], 
             marker_color=colors[strat], 
+            legendgroup=strat,
             showlegend=False
         ), row=3, col=3)
 
     final_mrr = at_click_20.groupby('strategy')['mrr'].mean()
     fig.add_trace(go.Bar(
-        x=final_mrr.index, 
+        x=[strat_names[s] for s in final_mrr.index], 
         y=final_mrr.values, 
         marker_color=[colors[s] for s in final_mrr.index], 
         showlegend=False
@@ -166,7 +177,7 @@ def create_advanced_dashboard():
     fig.update_layout(
         height=1200, 
         width=1600, 
-        title_text="Аналитика Адаптивного Поиска: Сравнение Стратегий", 
+        title_text="Аналитика Адаптивного Поиска: Сравнение Стратегий (v2)", 
         template="plotly_white", 
         showlegend=True,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
@@ -181,11 +192,6 @@ def create_advanced_dashboard():
     fig.update_yaxes(title_text="Позиция дистрактора", row=2, col=2)
     fig.update_yaxes(title_text="Выживаемость %", row=2, col=3)
     fig.update_yaxes(title_text="Коэфф. устойчивости", row=2, col=4)
-
-    fig.update_yaxes(title_text="Средняя позиция", row=3, col=1)
-    fig.update_yaxes(title_text="Позиция", row=3, col=2)
-    fig.update_yaxes(title_text="Разброс позиций", row=3, col=3)
-    fig.update_yaxes(title_text="MRR", row=3, col=4)
 
     fig.update_xaxes(showticklabels=False)
     fig.update_xaxes(showticklabels=True, title_text="Клики", row=3, col=1)
