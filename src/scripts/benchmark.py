@@ -2,17 +2,25 @@ import json
 import logging
 import sys
 import random
-from typing import List, Dict, Any
+from typing import List, Dict
 import pandas as pd
 from datasets import load_dataset
 from sqlmodel import Session, select, delete, func
 from tqdm import tqdm
 
-from src.database import engine, init_db, Interaction, Document
+from src.database import engine, init_db, Interaction, Document, User
 from src.search import search_documents
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("benchmark")
+
+def get_default_user_id():
+    with Session(engine) as session:
+        user = session.exec(select(User)).first()
+        if not user:
+            logger.error("No users found! Run 'make load' first.")
+            sys.exit(1)
+        return user.id
 
 def check_db_data():
     with Session(engine) as session:
@@ -57,7 +65,8 @@ def run_detailed_experiment(
     queries: List[tuple],
     max_clicks: int,
     noise_prob: float,
-    checkpoints: List[int]
+    checkpoints: List[int],
+    user_id: int
 ) -> List[Dict]:
     
     raw_data = []
@@ -93,6 +102,7 @@ def run_detailed_experiment(
                     click_target_id = distractor_doc["id"] if is_noise else target_doc["id"]
                     
                     inter = Interaction(
+                        user_id=user_id,
                         document_id=click_target_id,
                         query_text=q_text,
                         score_delta=1
@@ -121,6 +131,7 @@ def run_detailed_experiment(
 def main():
     init_db()
     check_db_data()
+    user_id = get_default_user_id()
     
     strategies = ["log", "linear", "sigmoid"]
     full_dataset = get_valid_queries(limit=None)
@@ -131,14 +142,14 @@ def main():
     logger.info("Starting Exp 1: Efficiency...")
     data1 = run_detailed_experiment(
         "Efficiency", strategies, full_dataset, 
-        max_clicks=5, noise_prob=0.0, checkpoints=[0, 5]
+        max_clicks=5, noise_prob=0.0, checkpoints=[0, 5], user_id=user_id
     )
     all_data.extend(data1)
 
     logger.info("Starting Exp 2: Noise...")
     data2 = run_detailed_experiment(
         "Noise", strategies, subset, 
-        max_clicks=5, noise_prob=0.2, checkpoints=[0, 5]
+        max_clicks=5, noise_prob=0.2, checkpoints=[0, 5], user_id=user_id
     )
     all_data.extend(data2)
 
@@ -146,7 +157,7 @@ def main():
     data3 = run_detailed_experiment(
         "Saturation", strategies, subset, 
         max_clicks=20, noise_prob=0.0, 
-        checkpoints=[0, 1, 3, 5, 10, 15, 20]
+        checkpoints=[0, 1, 3, 5, 10, 15, 20], user_id=user_id
     )
     all_data.extend(data3)
 

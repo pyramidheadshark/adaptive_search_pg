@@ -7,6 +7,13 @@ from sqlalchemy import Column
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://app_user:app_password@localhost:5432/adaptive_search")
 
+class User(SQLModel, table=True):
+    __tablename__ = "users"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(unique=True, index=True)
+    role: str = Field(default="user")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class Document(SQLModel, table=True):
     __tablename__ = "documents"
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -18,6 +25,7 @@ class Document(SQLModel, table=True):
 class Interaction(SQLModel, table=True):
     __tablename__ = "interactions"
     id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id")
     document_id: int = Field(foreign_key="documents.id")
     query_text: str
     score_delta: int

@@ -9,7 +9,7 @@ from sqlmodel import Session, select, text
 from tqdm import tqdm
 from huggingface_hub import login
 
-from src.database import Document, engine, init_db
+from src.database import Document, User, engine, init_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,13 +23,22 @@ def check_db_connection():
         logger.error(f"Database connection failed: {e}")
         sys.exit(1)
 
+def create_default_user():
+    with Session(engine) as session:
+        user = session.exec(select(User).where(User.username == "admin")).first()
+        if not user:
+            logger.info("Creating default admin user...")
+            admin = User(username="admin", role="admin")
+            session.add(admin)
+            session.commit()
+
 def load_nfcorpus():
     hf_token = os.getenv("HF_TOKEN")
     if hf_token:
         logger.info("Authenticating with Hugging Face...")
         login(token=hf_token.strip())
-    else:
-        logger.warning("No HF_TOKEN found. You might hit rate limits (429).")
+    
+    create_default_user()
 
     with Session(engine) as session:
         try:
@@ -39,31 +48,26 @@ def load_nfcorpus():
                 logger.info("Database already contains data. Skipping load.")
                 return
         except Exception as e:
-            logger.warning(f"Error checking data presence: {e}")
+            logger.warning(f"Error checking data: {e}")
 
-    logger.info("Loading NFCorpus dataset from HuggingFace...")
+    logger.info("Loading NFCorpus dataset...")
     dataset = load_dataset("BeIR/nfcorpus", "corpus", split="corpus")
-        
-    logger.info(f"Loaded {len(dataset)} documents.")
-
+    
     logger.info("Loading SentenceTransformer model...")
     model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
     
     batch_size = 64
     documents_buffer: List[Document] = []
     
-    logger.info("Starting encoding and ingestion...")
+    logger.info("Starting encoding...")
     
     with Session(engine) as session:
         for i in tqdm(range(0, len(dataset), batch_size), desc="Processing batches"):
             batch = dataset[i : i + batch_size]
-            
-            ids = batch["_id"]
-            texts = batch["text"]
             titles = batch["title"]
+            texts = batch["text"]
             
             combined_texts = [f"{t} {txt}".strip() for t, txt in zip(titles, texts)]
-            
             embeddings = model.encode(combined_texts)
             
             for j, text_content in enumerate(combined_texts):
@@ -78,7 +82,7 @@ def load_nfcorpus():
             session.commit()
             documents_buffer.clear()
             
-    logger.info("Data loading completed successfully!")
+    logger.info("Data loading completed!")
 
 if __name__ == "__main__":
     init_db()
