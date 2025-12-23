@@ -10,6 +10,7 @@ from tqdm import tqdm
 from huggingface_hub import login
 
 from src.database import Document, User, engine, init_db
+from src.security import get_password_hash
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,7 +29,13 @@ def create_default_user():
         user = session.exec(select(User).where(User.username == "admin")).first()
         if not user:
             logger.info("Creating default admin user...")
-            admin = User(username="admin", role="admin")
+            secure_hash = get_password_hash("admin123") 
+            
+            admin = User(
+                username="admin", 
+                password_hash=secure_hash,
+                role="admin"
+            )
             session.add(admin)
             session.commit()
 

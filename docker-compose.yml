@@ -3,15 +3,15 @@ services:
     image: pgvector/pgvector:pg16
     container_name: adaptive_search_db
     environment:
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: app_password
-      POSTGRES_DB: adaptive_search
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app_user -d adaptive_search"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,10 +22,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+psycopg://app_user:app_password@db:5432/adaptive_search
+      DATABASE_URL: ${DATABASE_URL}
       EMBEDDING_MODEL: sentence-transformers/all-MiniLM-L6-v2
       HF_TOKEN: ${HF_TOKEN}
-      HF_HOME: /app/data/.cache 
     depends_on:
       db:
         condition: service_healthy
