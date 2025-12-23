@@ -260,7 +260,5 @@ $RECYCLE.BIN/
 /.vscode/settings.json
 
 # Exclude scripts and tests
-/src/tests/test_api.py
-/src/scripts/benchmark.py
-/src/scripts/load_data.py
-/src/scripts/visualize.py
+!/src/tests/
+!/src/scripts/
