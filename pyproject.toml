@@ -17,7 +17,8 @@ dependencies = [
     "tqdm",
     "plotly",
     "huggingface_hub",
-    "passlib[bcrypt]"
+    "passlib[bcrypt]",
+    "kaleido",
 ]
 
 [build-system]
