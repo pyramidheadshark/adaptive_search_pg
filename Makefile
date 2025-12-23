@@ -1,6 +1,6 @@
-.PHONY: up down build logs shell test lint clean reset load search boost
+.PHONY: up down build logs shell test lint clean reset load
 
-# --- Infrastructure ---
+# Infrastructure
 up:
 	docker compose up -d
 
@@ -18,7 +18,7 @@ logs:
 shell:
 	docker compose exec app /bin/bash
 
-# --- Data & Testing ---
+# Data & Testing
 load:
 	@echo "Loading dataset..."
 	docker compose exec app python -m src.scripts.load_data
