@@ -16,7 +16,8 @@ dependencies = [
     "pandas",
     "tqdm",
     "plotly",
-    "huggingface_hub"
+    "huggingface_hub",
+    "passlib[bcrypt]"
 ]
 
 [build-system]
